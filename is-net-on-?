@@ -1,0 +1,165 @@
+#!/bin/sh
+
+#### initial conditions
+N=1
+testsite=google.com 
+quiet=0
+notify=0
+notify_p=1
+notify_n=1
+_continue=1 # 0 : no exec , 1 : exec once
+#		2 : exec till on , 3 : exec till off
+continue_smart=1
+#### functions
+
+### main function
+testnet (){
+	ping -c $N $testsite > /dev/null 2>&1
+	net=$?
+}
+### human vs quiet 
+human (){
+if [ $net -eq 0 ]
+then
+	echo "Net is ON :) !!"
+	exit 0
+else 
+	echo "Net is OFF :'( !!"
+	exit 1
+fi
+}
+quiet_exit(){
+	exit $net
+}
+
+
+### sending notification feature
+notify_set(){
+notify=1
+notify_p=1
+notify_n=1
+}
+
+notify_unset(){
+notify=0
+notify_p=1
+notify_n=1
+}
+
+notify_p_set(){
+notify=1
+notify_p=1
+notify_n=0
+}
+
+notify_n_set(){
+notify=1
+notify_p=0
+notify_n=1
+}
+
+notify_pass (){
+if [ $net -eq 0 ]
+then
+	if [ $notify_p -eq 1 ];then
+		notify-send "Net is ON :) !!"
+	fi
+else 
+	if [ $notify_n -eq 1 ];then
+		notify-send "Net is OFF :'( !!"
+	fi
+fi
+}
+
+
+### continue feature
+
+## latch
+continue_unset(){
+_continue=1
+}
+
+continue_on(){
+_continue=2
+( [ $continue_smart -eq 1 ] && notify_p_set ) # doesn't work :'(
+}
+
+continue_off(){
+_continue=3
+( [ $continue_smart -eq 1 ] && notify_n_set ) # doesn't work :'(
+}
+
+## check
+continue_check(){
+case $_continue in
+	1) _continue=0 ;; # once 
+	#, short if ( cond1 && cond2 ... && statment ) || ( elifcond1 && elifcond ... && elifstatment ) || else_statment 
+	2) ( ! [ $net -eq 0 ] ) || _continue=0  ;; # 2 : exec till net on 
+	3) ( ! [ $net -ne 0 ] ) || _continue=0 ;; # 3 : exec till net off
+	# used ( ! cond )|| stat  ,because ( cond && a=0 ) doesn't work 
+	#		but ( cond ) || a=0 works fine .
+	*) _continue=0 ;; # default once 	
+esac
+#, write note standards 
+}
+
+### documentaion functions
+## usage 
+usage (){
+
+}
+## fish auto complete generation
+net_test_fish(){
+
+}
+
+#### Arguments Scanning
+while [ $# -gt 0 ];do # scan args
+case $1 in
+	# ping arguments
+	-s | --test-site ) shift 
+       			   testsite=$1;;
+	#d: select test site ,default is google.com.
+	-n | --number )    shift
+			   N=$1;;
+	#d: num of set ping times .
+	# human vs quiet
+	-q | --quiet ) quiet=1;;
+	#d: quiet mode no output .
+	-h | --human ) quiet=0;; 
+	#d: human mode write log to stdout.
+	# notify feature
+	-f | --notify )        notify_set;;
+	#d: send notification whenever a
+	#d, test is done .
+	-fp | --notify-if-on ) notify_p_set;;
+	#d: send notification if net is on .
+	-fn | --notify-if-off) notify_n_set;;
+	#d: send notification if net is off .
+	# continue feature
+	-cp | --continue-till-on)  continue_on;;
+	#d: continue running until net is on .
+	-cn | --continue-till-off) continue_off;;
+	#d: continue running until net is off .
+esac
+shift
+done
+
+#### Main
+while [ $_continue -gt 0 ];do 
+
+##ping
+testnet
+#net=1
+
+## send notification
+( [ $notify -eq 1 ] && notify_pass ) # -cn -fn ??
+
+## human output 
+( [ $quiet -eq 0 ] && human )
+
+continue_check
+done
+
+##exit
+quiet_exit
