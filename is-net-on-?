@@ -106,16 +106,19 @@ esac
 ### documentaion functions
 ## usage 
 usage (){
-
+cat $0|grep "#d: "
 }
 ## fish auto complete generation
 net_test_fish(){
-
+	#$(usage)|gawk "" 
+echo ""
 }
 
 #### Arguments Scanning
 while [ $# -gt 0 ];do # scan args
 case $1 in
+	-h | --help ) usage
+			exit 1;;
 	# ping arguments
 	-s | --test-site ) shift 
        			   testsite=$1;;
