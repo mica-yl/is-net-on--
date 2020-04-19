@@ -98,6 +98,7 @@ case $_continue in
 	3) ( ! [ $net -ne 0 ] ) || _continue=0 ;; # 3 : exec till net off
 	# used ( ! cond )|| stat  ,because ( cond && a=0 ) doesn't work 
 	#		but ( cond ) || a=0 works fine .
+	4) _continue=4 ;; # continue forever 	
 	*) _continue=0 ;; # default once 	
 esac
 #, write note standards 
@@ -140,6 +141,8 @@ case $1 in
 	-fn | --notify-if-off) notify_n_set;;
 	#d: send notification if net is off .
 	# continue feature
+	-c | --continue)  _continue=4;;
+	#d: continue running until forever .
 	-cp | --continue-till-on)  continue_on;;
 	#d: continue running until net is on .
 	-cn | --continue-till-off) continue_off;;
