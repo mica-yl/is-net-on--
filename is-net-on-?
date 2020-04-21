@@ -1,15 +1,25 @@
 #!/bin/sh
 
 #### initial conditions
+
 N=1
 testsite=google.com 
+
 quiet=0
+
 notify=0
 notify_p=1
 notify_n=1
+
 _continue=1 # 0 : no exec , 1 : exec once
 #		2 : exec till on , 3 : exec till off
-continue_smart=1
+
+# assume intially off 
+_edge=0
+net=1
+old_net=1
+
+
 #### functions
 
 ### main function
@@ -58,7 +68,9 @@ notify_p=0
 notify_n=1
 }
 
+
 notify_pass (){
+#debug: echo "before $notify ->( $notify_p, !$notify_n )"
 if [ $net -eq 0 ]
 then
 	if [ $notify_p -eq 1 ];then
@@ -67,6 +79,32 @@ then
 else 
 	if [ $notify_n -eq 1 ];then
 		notify-send "Net is OFF :'( !!"
+	fi
+fi
+#debug: echo "after $notify ->( $notify_p, !$notify_n )"
+}
+
+## edge
+# alpha
+set_edge(){
+_edge=1
+continue_set
+}
+
+edge_check (){
+	if [ $_edge -eq 1 ] ;then
+if [  $net -gt $old_net ] ;then
+	notify-send ' -ve edge !'
+elif [ $net -lt $old_net ] ;then 	
+	notify-send "+ve edge !"
+fi
+	fi
+}
+
+notify_edge(){
+if ( [ $_edge -eq 1 ] && [ $net -ne $old_net ] ) ;then
+	if ( [ $net -eq 0 ] || [ $old_net -eq 0  ] );then
+	notify_pass
 	fi
 fi
 }
@@ -78,15 +116,15 @@ fi
 continue_unset(){
 _continue=1
 }
-
+continue_set(){
+_continue=4
+}
 continue_on(){
 _continue=2
-( [ $continue_smart -eq 1 ] && notify_p_set ) # doesn't work :'(
 }
 
 continue_off(){
 _continue=3
-( [ $continue_smart -eq 1 ] && notify_n_set ) # doesn't work :'(
 }
 
 ## check
@@ -140,8 +178,13 @@ case $1 in
 	#d: send notification if net is on .
 	-fn | --notify-if-off) notify_n_set;;
 	#d: send notification if net is off .
+	# edge feature
+	-e | --notify-edge ) set_edge;;
+	#d: send notification on edges only .
+	--log ) ;;
+	--beep ) ;;
 	# continue feature
-	-c | --continue)  _continue=4;;
+	-c | --continue)  continue_set;;
 	#d: continue running until forever .
 	-cp | --continue-till-on)  continue_on;;
 	#d: continue running until net is on .
@@ -155,6 +198,8 @@ done
 while [ $_continue -gt 0 ];do 
 
 ##ping
+old_net=$net
+
 testnet
 #net=1
 
@@ -163,6 +208,9 @@ testnet
 
 ## human output 
 ( [ $quiet -eq 0 ] && human )
+
+## edge feature
+notify_edge
 
 continue_check
 done
