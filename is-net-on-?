@@ -11,7 +11,9 @@ notify=0
 notify_p=1
 notify_n=1
 
-_continue=1 # 0 : no exec , 1 : exec once
+_continue=1 
+# _continue :
+# 0 : no exec , 1 : exec once
 #		2 : exec till on , 3 : exec till off
 
 # assume intially off 
@@ -145,7 +147,10 @@ esac
 ### documentaion functions
 ## usage 
 usage (){
-cat $0|grep "#d: "
+cat $0|gawk "/^\W#d:/{print} "
+}
+docs(){
+cat $0|gawk '/^#/{print}'
 }
 ## fish auto complete generation
 net_test_fish(){
@@ -157,7 +162,9 @@ echo ""
 while [ $# -gt 0 ];do # scan args
 case $1 in
 	--help ) usage
-			exit 1;;
+		exit 0;;
+	--docs ) docs
+		exit 0;;
 	# ping arguments
 	-s | --test-site ) shift 
        			   testsite=$1;;
@@ -179,7 +186,7 @@ case $1 in
 	-fn | --notify-if-off) notify_n_set;;
 	#d: send notification if net is off .
 	# edge feature
-	-e | --notify-edge ) set_edge;;
+	-e | -fe | --notify-edge ) set_edge;;
 	#d: send notification on edges only .
 	--log ) ;;
 	--beep ) ;;
